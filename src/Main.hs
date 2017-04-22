@@ -1,19 +1,19 @@
 module Main where
 
-import Prelude hiding (lookup)
-import Network.Wai.Handler.Warp    (run)
-import System.Environment          (lookupEnv)
-import Database.Persist.Postgresql (runSqlPool)
-import Data.Yaml.Config (load, subconfig, lookupDefault, lookup)
-import Data.Text.Encoding (encodeUtf8)
-import Control.Applicative ((<$>))
+import           Control.Applicative         ((<$>))
+import           Data.Text.Encoding          (encodeUtf8)
+import           Data.Yaml.Config            (load, lookup, lookupDefault,
+                                              subconfig)
+import           Database.Persist.Postgresql (runSqlPool)
+import           Network.Wai.Handler.Warp    (run)
+import           Prelude                     hiding (lookup)
+import           System.Environment          ()
 
-import Qy.Config
-import Qy.App    (app)
-import Qy.Model (doMigrations)
-import Qy.Types
+import           Qy.App                      (app)
+import           Qy.Config
+import           Qy.Model                    (doMigrations)
 
-import Qy.Chat.Simple (appWithSocket)
+import           Qy.Chat.Simple              (appWithSocket)
 
 main :: IO ()
 main = do
@@ -21,7 +21,7 @@ main = do
 
     qyConfig <- subconfig "chatqy" config
 
-    let port = lookupDefault "port" 8081 qyConfig
+    let port = lookupDefault "port" 4000 qyConfig
         poolNum = lookupDefault "poolNum" 1 qyConfig
     connStr <- encodeUtf8 <$> lookup "connStr" qyConfig
     env <- lookup "env" qyConfig

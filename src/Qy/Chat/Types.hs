@@ -14,17 +14,15 @@ module Qy.Chat.Types (
     )
     where
 
-import Data.Text
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TChan
-import qualified Data.Set as Set
-import Data.HashMap.Strict as M
-import qualified Network.WebSockets as WS
-import Data.Aeson
-import Data.Aeson.Types
-import qualified Control.Applicative as A
-import Control.Applicative ((<$>), (<*>))
-import Data.Function (on)
+import           Control.Applicative    ((<$>), (<*>))
+import           Control.Concurrent.STM
+import           Data.Aeson
+import           Data.Aeson.Types
+import           Data.Function          (on)
+import           Data.HashMap.Strict    as M
+import qualified Data.Set               as Set
+import           Data.Text
+import qualified Network.WebSockets     as WS
 
 
 type UserName = Text
@@ -34,16 +32,17 @@ type RoomMap = TVar (HashMap RoomName Room)
 emptyRoomMap :: IO RoomMap
 emptyRoomMap = newTVarIO M.empty
 
-data Room = Room { roomName :: RoomName
+data Room = Room { roomName    :: RoomName
                  , roomClients :: TVar (Set.Set Client)
-                 , roomChan :: TChan ChanMessage
+                 , roomChan    :: TChan ChanMessage
                  }
 
+getRoomChan :: Room -> TChan ChanMessage
 getRoomChan = roomChan
 
-data Client = Client { clientName :: Text
-                     , clientRooms :: TVar (Set.Set Room)
-                     , clientChan :: TChan ChanMessage
+data Client = Client { clientName      :: Text
+                     , clientRooms     :: TVar (Set.Set Room)
+                     , clientChan      :: TChan ChanMessage
                      , clientRoomChans :: TVar [TChan ChanMessage]
                      }
 
@@ -84,7 +83,7 @@ instance ToJSON ErrorMsg where
 data IncomingMsg = UserJoin { iRoomName :: !Text }
                  | UserLeave { iRoomName :: !Text }
                  | UserSendText { iRoomName :: !Text
-                                , iMsg :: !Text }
+                                , iMsg      :: !Text }
             deriving Show
 
 
@@ -122,13 +121,13 @@ instance ToJSON ChanMessage where
         object [ "type" .= ("leave" :: Text)
                , "username" .= u
                , "roomname" .= r]
-    toJSON (Tell u m) = undefined
-    toJSON (Notice r m) = undefined
+    toJSON (Tell _u _m) = undefined
+    toJSON (Notice _r _m) = undefined
 
 instance WS.WebSocketsData (Either ErrorMsg IncomingMsg) where
     fromLazyByteString s =
         case eitherDecode s of
-          Left m -> Left . ParserError $ pack m
+          Left m  -> Left . ParserError $ pack m
           Right i -> Right i
     toLazyByteString = undefined
 

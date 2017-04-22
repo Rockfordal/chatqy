@@ -1,32 +1,23 @@
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Qy.Room where
 
-import Data.Aeson
-import GHC.Generics hiding (from)
-import Servant
-import Control.Monad.Trans.Either
-import Control.Monad.Reader
-import Control.Applicative ((<$>), (<*>), empty)
-import qualified Control.Applicative as A
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import           Data.Aeson
+import           Data.Text          (Text)
+import           GHC.Generics       (Generic)
+import           Servant
 
-import Control.Monad.Trans (lift)
-import Control.Monad.IO.Class (liftIO)
+import           Database.Esqueleto
+import qualified Database.Persist   as P
 
-import Database.Esqueleto
-import qualified Database.Persist as P
-
-import Qy.Types
-import qualified Qy.Model as M
-
-import Qy.Error (raiseHTTPError)
-import Qy.Error.Room ( roomNotExists
-                     , roomAlreadyExists
-                     , roomNameNotMatchBody)
-import Qy.Error.Auth (userNotExists)
-import Qy.User (checkToken, Token)
-
+import           Qy.Error           (raiseHTTPError)
+import           Qy.Error.Auth      (userNotExists)
+import           Qy.Error.Room      (roomAlreadyExists, roomNameNotMatchBody,
+                                     roomNotExists)
+import qualified Qy.Model           as M
+import           Qy.Types
+import           Qy.User            (Token, checkToken)
 
 
 type RoomAPI = "room" :> Capture "roomname" Text :> "join" :> Post '[JSON] RoomInfo -- join in
@@ -36,7 +27,7 @@ type RoomAPI = "room" :> Capture "roomname" Text :> "join" :> Post '[JSON] RoomI
           :<|> "rooms" :> ReqBody '[JSON] RoomReq :> Post '[JSON] RoomInfo -- create new room
           :<|> "rooms" :> QueryFlag "all" :> Get  '[JSON] [RoomInfo] -- get all room info user joinded in
 
-data RoomInfo = RoomInfo { name :: Text
+data RoomInfo = RoomInfo { name        :: Text
                          , description :: Maybe Text
                          } deriving (Show, Generic)
 
@@ -45,7 +36,7 @@ instance ToJSON RoomInfo
 data RoomReq = RoomReq Text (Maybe Text)
 
 instance FromJSON RoomReq where
-    parseJSON (Object v) = RoomReq 
+    parseJSON (Object v) = RoomReq
               <$> v .: "name"
               <*> v .: "description"
 
@@ -90,27 +81,27 @@ leaveRoom mt rname = do
       (_, Nothing) -> raiseHTTPError roomNotExists
 
 createRoom :: Maybe Token -> RoomReq -> AppM RoomInfo
-createRoom mt (RoomReq name desc) = do
+createRoom mt (RoomReq name descr) = do
     uname <- checkToken mt
     maybeUser <- M.runDb $ getBy $ M.UniqueUser uname
     case maybeUser of
       Just (Entity uid _) -> do
-          maybeRoom <- M.runDb $ insertBy $ M.Room name desc uid
+          maybeRoom <- M.runDb $ insertBy $ M.Room name descr uid
           case maybeRoom of
-            Left _ -> raiseHTTPError roomAlreadyExists
-            Right _ -> return $ RoomInfo name desc
+            Left _  -> raiseHTTPError roomAlreadyExists
+            Right _ -> return $ RoomInfo name descr
       Nothing -> raiseHTTPError userNotExists
 
 updateRoom :: Maybe Token -> Text -> RoomReq -> AppM RoomInfo
-updateRoom mt rname (RoomReq name desc) = do
-    uname <- checkToken mt
+updateRoom mt rname (RoomReq name desk) = do
+    _uname <- checkToken mt
     if rname /= name
     then raiseHTTPError roomNameNotMatchBody
     else do
-        M.runDb $ P.updateWhere 
+        M.runDb $ P.updateWhere
                 [M.RoomName P.==. rname]
-                [M.RoomDescription P.=. desc]
-        return $ RoomInfo rname desc
+                [M.RoomDescription P.=. desk]
+        return $ RoomInfo rname desk
 
 listRooms :: Maybe Token -> Bool -> AppM [RoomInfo]
 listRooms mt listAll = do

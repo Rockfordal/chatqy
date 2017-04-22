@@ -29,7 +29,6 @@ export function responseHandler(response) {
         });
 }
 
-
 class AppError extends Error {
     constructor(message, status) {
         super(message);

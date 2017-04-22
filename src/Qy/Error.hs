@@ -1,10 +1,10 @@
 module Qy.Error where
 
-import Servant
-import Control.Monad.Trans.Either
-import Control.Monad.Reader
+import           Control.Monad.Reader
+import           Servant
 
-import Qy.Types (AppM)
+import           Qy.Types             (AppM)
+
 
 class ToServantErr a where
     toServantErr :: a -> ServantErr

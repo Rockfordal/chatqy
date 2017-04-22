@@ -1,19 +1,19 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Qy.Chat.Internal where
 
-import Prelude as P
-import Data.Text (Text)
-import qualified Data.Text as T
-import Control.Concurrent.STM
-import Data.HashMap.Strict as M
-import qualified Data.Set as Set
+import           Control.Concurrent.STM
+import           Data.HashMap.Strict    as M
+import qualified Data.Set               as Set
+import           Prelude                as P
 
-import Qy.Chat.Types
+import           Qy.Chat.Types
 
 
 getRoom :: RoomName -> RoomMap -> STM Room
 getRoom rname rmap = do
-    map <- readTVar rmap
-    case M.lookup rname map of
+    m <- readTVar rmap
+    case M.lookup rname m of
       Just room -> return room
       Nothing -> do
           room <- makeEmptyRoom rname
@@ -71,5 +71,3 @@ allRoomClientIn :: Client -> STM [Room]
 allRoomClientIn Client{..} = do
     roomSet <- readTVar clientRooms
     return $ Set.toAscList roomSet
-
-

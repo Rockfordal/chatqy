@@ -1,9 +1,13 @@
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators   #-}
+
 module Qy.Page where
 
-import Text.Blaze.Html5 as H
-import Text.Blaze.Html5.Attributes as A
-import Servant.HTML.Blaze
-import Servant
+import           Servant
+import           Servant.HTML.Blaze
+import           Text.Blaze.Html5            as H
+import           Text.Blaze.Html5.Attributes as A
 
 
 page :: Html

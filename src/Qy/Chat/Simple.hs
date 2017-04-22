@@ -1,28 +1,30 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Qy.Chat.Simple where
 
-import Data.Monoid (mappend)
-import Data.Text (Text)
-import qualified Data.Text as T
-import Control.Monad (forever)
-import Data.Foldable (forM_)
-import Control.Monad.Trans.Maybe
-import Control.Monad.Reader hiding (forM_)
-import Control.Exception (finally)
+import           Control.Exception              (finally)
+import           Control.Monad                  (forever)
+import           Control.Monad.Reader           hiding (forM_)
+import           Control.Monad.Trans.Maybe
+import           Data.Foldable                  (forM_)
+import           Data.Text                      (Text)
 
-import Control.Concurrent.STM
-import Control.Monad.IO.Class (liftIO)
-import Control.Concurrent.Async (race_)
+import           Control.Concurrent.Async       (race_)
+import           Control.Concurrent.STM
+import           Control.Monad.IO.Class         (liftIO)
 
-import Web.JWT (iss, stringOrURIToText)
+import           Web.JWT                        (iss, stringOrURIToText)
 
-import qualified Network.WebSockets as WS
-import Network.Wai.Handler.WebSockets (websocketsOr)
+import           Network.Wai                    (Application)
+import           Network.Wai.Handler.WebSockets (websocketsOr)
+import qualified Network.WebSockets             as WS
 
-import Qy.User (Token(..), getClaimSetFromToken, checkExpValid)
-import Qy.Chat.Internal
-import Qy.Chat.Types
-import Qy.Model (checkUserInRoom)
-import Qy.Config
+import           Qy.Chat.Internal
+import           Qy.Chat.Types
+import           Qy.Config
+import           Qy.Model                       (checkUserInRoom)
+import           Qy.User                        (Token (..), checkExpValid,
+                                                 getClaimSetFromToken)
 
 
 type ChatApp = ReaderT Config IO
@@ -66,15 +68,16 @@ application cfg pending = do
           client <- liftIO . atomically $ makeNewClient uname
           raceChatApp cfg
               (receiveLoop client conn)
-              (sendLoop client conn) 
+              (sendLoop client conn)
             `finally` disconnect client
 
 disconnect :: Client -> IO ()
 disconnect client@Client{..} = atomically $ do
     roomSet <- readTVar clientRooms
-    forM_ roomSet (kickClientOutOfRoom client) 
+    forM_ roomSet (kickClientOutOfRoom client)
     forM_ roomSet (\room -> writeTChan (roomChan room) $ LeaveNotice (roomName room) clientName)
 
+appWithSocket :: Config -> Application -> Application
 appWithSocket cfg = websocketsOr WS.defaultConnectionOptions (application cfg)
 
 receiveLoop :: Client -> WS.Connection -> ChatApp ()
@@ -111,9 +114,3 @@ sendLoop client@Client{..} conn = forever $ do
     chanMsg <- liftIO . atomically $ do
         getAvaliableMessage client
     send conn chanMsg
-
-
-
-
-
-

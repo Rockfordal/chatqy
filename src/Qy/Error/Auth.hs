@@ -1,14 +1,14 @@
 module Qy.Error.Auth where
 
-import GHC.Generics
-import Servant
-import Data.CaseInsensitive (mk)
-import Data.Aeson
-import Data.Text
-import Qy.Error
+import           Data.Aeson
+import           Data.CaseInsensitive (mk)
+import           Data.Text
+import           GHC.Generics
+import           Qy.Error
+import           Servant
 
 data AuthErr = AuthErr {
-      status :: Int
+      status  :: Int
     , message :: Text
     } deriving (Show, Generic)
 
@@ -45,4 +45,3 @@ instance ToServantErr AuthErr where
     toServantErr es = err401 { errBody = encode es
                              , errHeaders = [(mk "Content-Type", "application/json")]
                              }
-

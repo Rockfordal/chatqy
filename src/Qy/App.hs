@@ -1,29 +1,18 @@
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Qy.App where
 
-import Data.Aeson
-import GHC.Generics
-import Network.Wai
-import Servant
-import Network.Wai.Handler.Warp (run)
-import Control.Monad.Trans.Either
-import Control.Monad.Reader
-import Data.Text
-import Control.Monad.Trans (lift)
-import Control.Monad.IO.Class (liftIO)
-import Database.Persist.Postgresql (withPostgresqlPool)
+import           Control.Monad.Reader
+import           Network.Wai
+import           Servant
 
-import Web.JWT hiding (JSON)
+import           Qy.Config            (Config)
+import           Qy.Page              (Eg, egServer)
+import           Qy.Room              (RoomAPI, roomServer)
+import           Qy.Types
+import           Qy.User              (Token, UserAPI, loginServer)
 
-import Qy.User (UserAPI, loginServer, Token,
-            ReturnToken(..), checkToken)
-
-import Qy.Error (raiseHTTPError)
-
-import Qy.Model
-import Qy.Types
-import Qy.Config (Config)
-import Qy.Page (egServer, Eg)
-import Qy.Room (RoomAPI, roomServer)
 
 type API = "api" :> QyAPI
       :<|> "static" :> Raw
@@ -36,8 +25,8 @@ type LoginRequiredAPI = Header "Authorization" Token :>
 
 
 server :: ServerT QyAPI AppM
-server = loginServer 
-    :<|> loginRequiredServer 
+server = loginServer
+    :<|> loginRequiredServer
 
 loginRequiredServer :: ServerT LoginRequiredAPI AppM
 loginRequiredServer t = roomServer t

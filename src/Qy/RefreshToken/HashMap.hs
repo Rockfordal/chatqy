@@ -6,10 +6,9 @@ module Qy.RefreshToken.HashMap (
     , deleteToken'
     ) where
 
-import Data.HashMap.Strict as M
-import Data.Text
-import Control.Concurrent.STM
-import Control.Monad
+import           Control.Concurrent.STM
+import           Data.HashMap.Strict    as M
+import           Data.Text
 
 type RTokenMap = TVar (HashMap Text Text)
 
@@ -18,15 +17,15 @@ newRTokenMap = atomically $ newTVar M.empty
 
 addToken' :: RTokenMap -> Text -> Text -> IO ()
 addToken' rm uid token = atomically $ do
-    map <- readTVar rm
-    writeTVar rm $ insert uid token map
+    m <- readTVar rm
+    writeTVar rm $ insert uid token m
 
 existsToken' :: RTokenMap -> Text -> Text -> IO Bool
 existsToken' rm uid token = do
-    map <- readTVarIO rm
-    return $ maybe False (== token) (M.lookup uid map)
+    m <- readTVarIO rm
+    return $ maybe False (== token) (M.lookup uid m)
 
 deleteToken' :: RTokenMap -> Text -> IO ()
 deleteToken' rm uid = atomically $ do
-    map <- readTVar rm
-    writeTVar rm $ delete uid map
+    m <- readTVar rm
+    writeTVar rm $ delete uid m

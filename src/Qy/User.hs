@@ -1,53 +1,41 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Qy.User where
 
-import Data.Aeson
-import GHC.Generics
-import Servant
-import Control.Monad.Trans.Either
-import Control.Monad.Reader
-import Control.Applicative ((<$>), (<*>), empty)
-import Control.Monad (when)
-import qualified Control.Applicative as A
-import Data.Text
-import Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
-import qualified Crypto.Hash.SHA256 as H
-import Control.Concurrent.STM
+import qualified Control.Applicative    as A
+import           Control.Monad          (when)
+import qualified Crypto.Hash.SHA256     as H
+import           Data.Aeson
+import           Data.Text
+import           Data.Text              as T
+import           Data.Text.Encoding     (encodeUtf8)
+import           GHC.Generics
+import           Servant
 
-import Control.Monad.Trans (lift)
-import Control.Monad.IO.Class (liftIO)
+import           Control.Monad.IO.Class (liftIO)
 
-import Web.JWT hiding (JSON)
-import qualified Web.JWT as J
+import           Web.JWT                hiding (JSON)
+import qualified Web.JWT                as J
 
-import Data.Time.Clock.POSIX (getPOSIXTime)
-import Data.Time.Clock (NominalDiffTime)
+import           Data.Time.Clock        (NominalDiffTime)
+import           Data.Time.Clock.POSIX  (getPOSIXTime)
 
-import Database.Persist
-import Database.Persist.Postgresql
+import           Database.Persist
 
-import Qy.Types
-import qualified Qy.Model as M
-
-import Qy.Error (raiseHTTPError)
-import Qy.Error.Auth ( userNotExists
-                     , passwordInvalid
-                     , userAlreadyExists
-                     , tokenInvalid
-                     , tokenNotPresent
-                     , userNameIsEmpty
-                     , passwordTooShort
-                     , tokenExpire
-                     , refreshTokenInvalid)
-
-import Qy.RefreshToken (addToken, existsToken, deleteToken)
-import Qy.Random (randomText)
+import           Qy.Error               (raiseHTTPError)
+import           Qy.Error.Auth          (passwordInvalid, passwordTooShort,
+                                         refreshTokenInvalid, tokenExpire,
+                                         tokenInvalid, tokenNotPresent,
+                                         userAlreadyExists, userNameIsEmpty,
+                                         userNotExists)
+import qualified Qy.Model               as M
+import           Qy.Random              (randomText)
+import           Qy.RefreshToken        (addToken, deleteToken, existsToken)
+import           Qy.Types
 
 
 type UserAPI = "login" :> ReqBody '[JSON] LoginForm :> Post '[JSON] ReturnToken
@@ -60,8 +48,8 @@ data LoginForm = LoginForm { username :: Text
                            } deriving (Show, Generic)
 instance FromJSON LoginForm
 
-data SignUpForm = SignUpForm { signname :: Text
-                             , signpass :: Text
+data SignUpForm = SignUpForm { signname  :: Text
+                             , signpass  :: Text
                              , signemail :: Text
                              } deriving (Show, Generic)
 instance FromJSON SignUpForm where
@@ -71,14 +59,14 @@ instance FromJSON SignUpForm where
               <*> v .: "email"
     parseJSON _ = A.empty
 
-data RefreshForm = RefreshForm { uid :: Text
+data RefreshForm = RefreshForm { uid   :: Text
                                , token :: Text } deriving Generic
 instance FromJSON RefreshForm
 
 
-data ReturnToken = ReturnToken { access_token :: Text
+data ReturnToken = ReturnToken { access_token  :: Text
                                , refresh_token :: Text
-                               , expiration :: Int --seconds to expire
+                               , expiration    :: Int --seconds to expire
                                } deriving Generic
 
 instance ToJSON ReturnToken
@@ -91,7 +79,7 @@ instance FromHttpApiData Token where
             ls = T.words striped
         in case ls of
                 "Bearer":r:_ -> Right $ Token r
-                _ -> Left "Invalid Token"
+                _            -> Left "Invalid Token"
 
 
 loginServer :: ServerT UserAPI AppM
@@ -102,7 +90,7 @@ login (LoginForm u p) = do
     -- allow all to login
     maybeUser <- M.runDb $ getBy $ M.UniqueUser u
     case maybeUser of
-      Nothing -> raiseHTTPError userNotExists
+      Nothing              -> raiseHTTPError userNotExists
       Just (Entity _ user) -> returnTokenWithValidation user p
 
 signup :: SignUpForm -> AppM ReturnToken
@@ -114,7 +102,7 @@ signup (SignUpForm u p e) = do
     dbResult <- M.runDb $ insertBy user
     case dbResult of
       Left _ -> raiseHTTPError userAlreadyExists
-      _ -> returnToken u
+      _      -> returnToken u
 
 refresh :: RefreshForm -> AppM ReturnToken
 refresh (RefreshForm uid token) = do
@@ -140,7 +128,7 @@ returnToken :: Text -> AppM ReturnToken
 returnToken uid = do
     expTime <- liftIO $ createExpTime 60 -- expire at 1 hour
     let cs = def { iss = stringOrURI uid
-                 , J.exp = intDate expTime
+                 , J.exp = numericDate expTime
                  }
         s = getSecret
         alg = getAlgorithm
@@ -160,13 +148,14 @@ getAlgorithm = HS256
 -- some function for doing token check
 
 createExpTime :: Int -> IO NominalDiffTime
-createExpTime min = do
+createExpTime minn = do
     cur <- getPOSIXTime
-    return $ cur + (fromIntegral min + 5) * 60 -- add 5 more minutes
+    return $ cur + (fromIntegral minn + 5) * 60 -- add 5 more minutes
 
+checkExpValid :: JWTClaimsSet -> IO Bool
 checkExpValid = checkExpValid' . J.exp
 
-checkExpValid' :: Maybe IntDate -> IO Bool
+checkExpValid' :: Maybe NumericDate -> IO Bool
 checkExpValid' Nothing = return False
 checkExpValid' (Just d) = do
     cur <- getPOSIXTime
@@ -186,5 +175,5 @@ checkToken (Just t) = do
           if isValid
           then case iss cl of
                  Nothing -> raiseHTTPError tokenInvalid
-                 Just u -> return $ J.stringOrURIToText u
+                 Just u  -> return $ J.stringOrURIToText u
           else raiseHTTPError tokenExpire

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
@@ -5,25 +6,22 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE DeriveGeneric              #-}
+
 
 module Qy.Model where
 
-import Prelude as P
-import Control.Monad.IO.Class  (liftIO)
-import Database.Esqueleto
-import qualified Database.Persist as P
--- import Database.Persist.Postgresql
-import Database.Persist.TH
-import Control.Monad.Reader
-import Data.Text
-import Data.ByteString (ByteString)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader
+import           Data.ByteString        (ByteString)
+import           Data.Text
+import           Database.Esqueleto
+import           Database.Persist.TH
+import           Prelude                as P
 
-import Qy.Config
-import Qy.Types
+import           Qy.Config
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
@@ -47,12 +45,14 @@ UserRoom
 doMigrations :: ReaderT SqlBackend IO ()
 doMigrations = runMigration migrateAll
 
+runDb :: (MonadIO m, MonadReader Config m) => ReaderT SqlBackend IO b -> m b
 runDb query = do
     pool <- asks getPool
     liftIO $ runSqlPool query pool
 
+checkUserInRoom :: (MonadReader Config m, MonadIO m) => Text -> Text -> m Bool
 checkUserInRoom uname rname = do
-    pool <- asks getPool
+    _pool <- asks getPool
     rooms <- runDb $ select $
       from $ \(u, re, r) -> do
         where_ (u^.UserId ==. re^.UserRoomUserId

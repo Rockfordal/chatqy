@@ -11,4 +11,5 @@ packages:
 extra-deps:
 - servant-jquery-0.2.2.1
 - yaml-config-0.4.0
-resolver: lts-8.5
+
+resolver: lts-8.11

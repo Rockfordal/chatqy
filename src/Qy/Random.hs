@@ -1,8 +1,8 @@
 module Qy.Random where
 
-import System.Random
-import Data.Char (isAlphaNum)
-import qualified Data.Text as T
+import           Data.Char     (isAlphaNum)
+import qualified Data.Text     as T
+import           System.Random
 
 randomText :: IO T.Text
 randomText = do
