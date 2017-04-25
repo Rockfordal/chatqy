@@ -18,10 +18,9 @@ import           Qy.Chat.Simple              (appWithSocket)
 main :: IO ()
 main = do
     config <- load "./chatqy.yaml"
-
     qyConfig <- subconfig "chatqy" config
 
-    let port = lookupDefault "port" 4000 qyConfig
+    let port = lookupDefault "port" 8081 qyConfig
         poolNum = lookupDefault "poolNum" 1 qyConfig
     connStr <- encodeUtf8 <$> lookup "connStr" qyConfig
     env <- lookup "env" qyConfig

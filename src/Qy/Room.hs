@@ -20,10 +20,10 @@ import           Qy.Types
 import           Qy.User            (Token, checkToken)
 
 
-type RoomAPI = "room" :> Capture "roomname" Text :> "join" :> Post '[JSON] RoomInfo -- join in
-          :<|> "room" :> Capture "roomname" Text :> "info" :> Get '[JSON] RoomInfo -- get room info
-          :<|> "room" :> Capture "roomname" Text :> ReqBody '[JSON] RoomReq :> Post '[JSON] RoomInfo -- update room info
-          :<|> "room" :> Capture "roomname" Text :> Delete '[JSON] RoomInfo -- delete room
+type RoomAPI = "room"  :> Capture "roomname" Text :> "join" :> Post '[JSON] RoomInfo -- join in
+          :<|> "room"  :> Capture "roomname" Text :> "info" :> Get '[JSON] RoomInfo -- get room info
+          :<|> "room"  :> Capture "roomname" Text :> ReqBody '[JSON] RoomReq :> Post '[JSON] RoomInfo -- update room info
+          :<|> "room"  :> Capture "roomname" Text :> Delete '[JSON] RoomInfo -- delete room
           :<|> "rooms" :> ReqBody '[JSON] RoomReq :> Post '[JSON] RoomInfo -- create new room
           :<|> "rooms" :> QueryFlag "all" :> Get  '[JSON] [RoomInfo] -- get all room info user joinded in
 
@@ -50,7 +50,7 @@ roomServer mt = joinRoom mt
 
 getRoomInfo :: Maybe Token -> Text -> AppM RoomInfo
 getRoomInfo mt rname = do
-    uname <- checkToken mt
+    _uname <- checkToken mt
     maybeRoom <- M.runDb $ getBy $ M.UniqueRoom rname
     case maybeRoom of
       Nothing -> raiseHTTPError roomNotExists
@@ -62,7 +62,7 @@ joinRoom mt rname = do
     maybeUser <- M.runDb $ getBy $ M.UniqueUser uname
     maybeRoom <- M.runDb $ getBy $ M.UniqueRoom rname
     case (maybeUser, maybeRoom) of
-      (Just (Entity uid _) , Just (Entity rid room))-> do
+      (Just (Entity uid _), Just (Entity rid room)) -> do
           M.runDb $ insertBy $ M.UserRoom uid rid
           return $ RoomInfo rname (M.roomDescription room)
       (Nothing, _) -> raiseHTTPError userNotExists
@@ -74,7 +74,7 @@ leaveRoom mt rname = do
     maybeUser <- M.runDb $ getBy $ M.UniqueUser uname
     maybeRoom <- M.runDb $ getBy $ M.UniqueRoom rname
     case (maybeUser, maybeRoom) of
-      (Just (Entity uid _) , Just (Entity rid room))-> do
+      (Just (Entity uid _), Just (Entity rid room)) -> do
           M.runDb $ deleteBy $ M.UniqueUserRoom uid rid
           return $ RoomInfo rname (M.roomDescription room)
       (Nothing, _) -> raiseHTTPError userNotExists

@@ -26,7 +26,6 @@ import           Qy.Model                       (checkUserInRoom)
 import           Qy.User                        (Token (..), checkExpValid,
                                                  getClaimSetFromToken)
 
-
 type ChatApp = ReaderT Config IO
 
 raceChatApp :: Config -> ChatApp a -> ChatApp b -> IO ()
@@ -46,7 +45,7 @@ hoistMaybeT = MaybeT . return
 extractUserInfo :: Text -> MaybeT IO Text
 extractUserInfo t = do
     let token = Token t
-    claim <- hoistMaybeT $ getClaimSetFromToken token
+    claim   <- hoistMaybeT $ getClaimSetFromToken token
     isValid <- liftIO $ checkExpValid claim
     if isValid
     then do
@@ -57,9 +56,9 @@ extractUserInfo t = do
 
 application :: Config -> WS.PendingConnection -> IO ()
 application cfg pending = do
-    conn <- WS.acceptRequest pending
+    conn   <- WS.acceptRequest pending
     WS.forkPingThread conn 30
-    msg <- WS.receiveData conn
+    msg    <- WS.receiveData conn
     result <- runMaybeT $ extractUserInfo msg
     case result of
       Nothing -> WS.sendTextData conn $

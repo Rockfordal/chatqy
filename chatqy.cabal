@@ -92,13 +92,15 @@ executable chatqy
                     , servant
                     , servant-docs
                     , servant-blaze
-                    , blaze-html
+                    , servant-options
                     , servant-server
+                    , blaze-html
                     , text
                     , time
                     , transformers
                     , wai
                     , wai-extra
+                    , wai-cors
                     , warp
                     , jwt
                     , containers

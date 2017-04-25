@@ -1,2 +1,4 @@
 #./node_modules/.bin/webpack
+#systemctl start postgresql
+#systemctl start nginx
 stack exec chatqy
