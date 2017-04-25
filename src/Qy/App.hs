@@ -44,26 +44,9 @@ readerToEither cfg = Nat $ \x -> runReaderT x cfg
 api :: Proxy API
 api = Proxy
 
--- app :: Config -> Application
--- app cfg = serve api (readerServer cfg)
-
--- app :: Config -> Application
--- app cfg = simpleCors $ serve api (readerServer cfg)
-
--- app :: Config -> Application
--- app cfg =
---     -- logStdoutDev
---     -- $ cors (const $ Just policy)
---     provideOptions api
---     $ serve api (readerServer cfg)
---   where
---   policy = simpleCorsResourcePolicy
---            { corsRequestHeaders = [ "content-type" ] }
-
 app :: Config -> Application
 app cfg =
     -- do
-    -- s <- getServer
     --   s <- (readerServer cfg)
     --   return
         logStdoutDev
@@ -76,3 +59,5 @@ app cfg =
             where
               policy = simpleCorsResourcePolicy
                 { corsRequestHeaders = ["Content-Type"] }
+
+-- app cfg = serve api (readerServer cfg)
