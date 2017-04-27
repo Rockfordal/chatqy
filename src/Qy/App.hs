@@ -58,6 +58,6 @@ app cfg =
         corsWithContentType = cors (const $ Just policy)
             where
               policy = simpleCorsResourcePolicy
-                { corsRequestHeaders = ["Content-Type"] }
+                { corsRequestHeaders = ["Content-Type", "Authorization"] }
 
 -- app cfg = serve api (readerServer cfg)
